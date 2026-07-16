@@ -1,0 +1,35 @@
+---
+interface Props {
+  status: string;
+  progress: number;
+  visible: boolean;
+}
+
+const { status, progress, visible } = Astro.props;
+---
+
+<div
+  id="progress-bar"
+  class:list={[
+    'fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm transition-opacity duration-300',
+    visible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+  ]}
+>
+  <div class="w-full max-w-md px-6">
+    <div class="mb-4 text-center">
+      <div class="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-primary-600"></div>
+      <p id="progress-status" class="text-base font-medium text-slate-700">{status}</p>
+    </div>
+    <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+      <div
+        id="progress-fill"
+        class="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-700 transition-all duration-300"
+        style={`width: ${progress * 100}%`}
+      >
+      </div>
+    </div>
+    <p id="progress-percent" class="mt-2 text-center text-sm text-slate-500">
+      {Math.round(progress * 100)}%
+    </p>
+  </div>
+</div>

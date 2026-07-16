@@ -1,0 +1,443 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ReaderControls from '../components/ReaderControls.astro';
+import { DEFAULT_SETTINGS } from '../lib/indexedDB';
+---
+
+<Layout title="Reader — Mobile PDF Reader">
+  <ReaderControls settings={DEFAULT_SETTINGS} chapterCount={0} wordCount={0} />
+
+  <!-- Reader content -->
+  <main
+    id="reader-main"
+    class="reader-content reader-theme-light min-h-screen"
+    style="background: var(--reader-bg); color: var(--reader-text);"
+  >
+    <div id="reader-container" class="mx-auto px-4 py-8 sm:px-6 sm:py-12" style="max-width: var(--reader-width);">
+      <!-- Loading state -->
+      <div id="reader-loading" class="flex min-h-[60vh] items-center justify-center">
+        <div class="text-center">
+          <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-primary-600"></div>
+          <p class="text-sm text-slate-500">Loading book...</p>
+        </div>
+      </div>
+
+      <!-- Book content -->
+      <article id="reader-article" class="hidden" style="font-family: var(--reader-font-family); font-size: var(--reader-font-size);">
+        <!-- Header -->
+        <header class="mb-10 border-b pb-6 text-center" style="border-color: currentColor;">
+          <h1 id="book-title" class="text-2xl font-bold sm:text-3xl" style="color: var(--reader-text);"></h1>
+          <p id="book-meta" class="mt-2 text-sm opacity-60"></p>
+        </header>
+
+        <!-- Chapters -->
+        <div id="chapters-container"></div>
+
+        <!-- Chapter nav -->
+        <nav id="chapter-nav" class="mt-12 flex items-center justify-between gap-4 border-t pt-8" style="border-color: currentColor;">
+          <button id="prev-chapter" class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 9 12l6.75-7.5" /></svg>
+            Previous
+          </button>
+          <span id="chapter-indicator" class="text-xs opacity-50"></span>
+          <button id="next-chapter" class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed">
+            Next
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+          </button>
+        </nav>
+      </article>
+
+      <!-- Error state -->
+      <div id="reader-error" class="hidden min-h-[60vh] items-center justify-center">
+        <div class="text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-error-500/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-error-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+          </div>
+          <h3 class="mb-2 text-lg font-semibold text-slate-700">Book not found</h3>
+          <p class="mb-6 text-sm text-slate-500">This book may have been deleted.</p>
+          <a href="/library" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-700">
+            Back to Library
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast notification -->
+  <div id="toast" class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 translate-y-20 rounded-xl bg-slate-800 px-5 py-3 text-sm font-medium text-white opacity-0 transition-all duration-300">
+  </div>
+</Layout>
+
+<script>
+  import {
+    getBook,
+    updateBookProgress,
+    updateBookSettings,
+    DEFAULT_SETTINGS,
+    type Book,
+    type ReaderSettings,
+  } from '../lib/indexedDB';
+  import { buildReaderHtml, estimateReadingTime, formatReadingTime, downloadHtmlFile } from '../lib/readerGenerator';
+
+  const params = new URLSearchParams(window.location.search);
+  const bookId = params.get('id');
+
+  const readerMain = document.getElementById('reader-main')!;
+  const readerContainer = document.getElementById('reader-container')!;
+  const readerArticle = document.getElementById('reader-article')!;
+  const readerLoading = document.getElementById('reader-loading')!;
+  const readerError = document.getElementById('reader-error')!;
+  const bookTitleEl = document.getElementById('book-title')!;
+  const bookMetaEl = document.getElementById('book-meta')!;
+  const bookTitleDisplay = document.getElementById('book-title-display')!;
+  const chaptersContainer = document.getElementById('chapters-container')!;
+  const chapterNav = document.getElementById('chapter-nav')!;
+  const prevChapterBtn = document.getElementById('prev-chapter') as HTMLButtonElement;
+  const nextChapterBtn = document.getElementById('next-chapter') as HTMLButtonElement;
+  const chapterIndicator = document.getElementById('chapter-indicator')!;
+  const readingProgress = document.getElementById('reading-progress')!;
+  const toast = document.getElementById('toast')!;
+
+  // Control elements
+  const fontDecrease = document.getElementById('font-decrease')!;
+  const fontIncrease = document.getElementById('font-increase')!;
+  const themeBtns = document.querySelectorAll('[data-theme-btn]');
+  const widthBtns = document.querySelectorAll('[data-width-btn]');
+  const searchToggle = document.getElementById('search-toggle')!;
+  const searchBar = document.getElementById('search-bar')!;
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const searchClear = document.getElementById('search-clear')!;
+  const searchResultsCount = document.getElementById('search-results-count')!;
+  const bookmarkBtn = document.getElementById('bookmark-btn')!;
+  const exportBtn = document.getElementById('export-btn')!;
+
+  let currentBook: Book | null = null;
+  let currentSettings: ReaderSettings = DEFAULT_SETTINGS;
+  let currentChapter = 0;
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showToast(msg: string) {
+    toast.textContent = msg;
+    toast.classList.remove('opacity-0', 'translate-y-20');
+    toast.classList.add('opacity-100', 'translate-y-0');
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-20');
+      toast.classList.remove('opacity-100', 'translate-y-0');
+    }, 2000);
+  }
+
+  function applySettings() {
+    const s = currentSettings;
+    // Theme
+    readerMain.classList.remove('reader-theme-light', 'reader-theme-dark', 'reader-theme-sepia');
+    readerMain.classList.add(`reader-theme-${s.theme}`);
+
+    // Font size
+    readerMain.style.setProperty('--reader-font-size', `${s.fontSize}px`);
+
+    // Width
+    const widthMap = { narrow: '480px', medium: '680px', wide: '900px' };
+    readerMain.style.setProperty('--reader-width', widthMap[s.width]);
+
+    // Font family
+    const fontMap = {
+      serif: '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif',
+      sans: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    };
+    readerMain.style.setProperty('--reader-font-family', fontMap[s.fontFamily]);
+
+    // Update active buttons
+    themeBtns.forEach((btn) => {
+      const theme = (btn as HTMLElement).dataset.themeBtn;
+      if (theme === s.theme) {
+        btn.classList.add('bg-white', 'shadow-sm', 'text-primary-600');
+        btn.classList.remove('text-slate-500');
+      } else {
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-primary-600');
+        btn.classList.add('text-slate-500');
+      }
+    });
+    widthBtns.forEach((btn) => {
+      const width = (btn as HTMLElement).dataset.widthBtn;
+      if (width === s.width) {
+        btn.classList.add('bg-white', 'shadow-sm', 'text-primary-600');
+        btn.classList.remove('text-slate-500');
+      } else {
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-primary-600');
+        btn.classList.add('text-slate-500');
+      }
+    });
+  }
+
+  function saveSettings() {
+    if (!currentBook) return;
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      updateBookSettings(currentBook!.id, currentSettings);
+    }, 500);
+  }
+
+  function saveProgress() {
+    if (!currentBook) return;
+    const scrollTop = window.scrollY;
+    updateBookProgress(currentBook.id, scrollTop, currentChapter);
+  }
+
+  function updateReadingProgress() {
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = window.scrollY;
+    const progress = scrollHeight > 0 ? (scrolled / scrollHeight) * 100 : 0;
+    readingProgress.style.width = `${Math.min(100, progress)}%`;
+  }
+
+  function scrollToChapter(index: number) {
+    if (!currentBook) return;
+    currentChapter = index;
+    const chapterEl = document.getElementById(`chapter-${index}`);
+    if (chapterEl) {
+      const top = chapterEl.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+    updateChapterNav();
+    saveProgress();
+  }
+
+  function updateChapterNav() {
+    if (!currentBook) return;
+    const total = currentBook.chapters.length;
+    chapterIndicator.textContent = `${currentChapter + 1} / ${total}`;
+    prevChapterBtn.disabled = currentChapter === 0;
+    nextChapterBtn.disabled = currentChapter === total - 1;
+  }
+
+  function detectCurrentChapter() {
+    if (!currentBook) return;
+    const chapters = currentBook.chapters;
+    let found = 0;
+    for (let i = 0; i < chapters.length; i++) {
+      const el = document.getElementById(`chapter-${i}`);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.top > 80) {
+        found = Math.max(0, i - 1);
+        break;
+      }
+      found = i;
+    }
+    if (found !== currentChapter) {
+      currentChapter = found;
+      updateChapterNav();
+    }
+  }
+
+  function performSearch(query: string) {
+    // Remove previous highlights
+    const marks = chaptersContainer.querySelectorAll('mark');
+    marks.forEach((m) => {
+      const text = document.createTextNode(m.textContent || '');
+      m.replaceWith(text);
+    });
+
+    if (!query || query.length < 2) {
+      searchResultsCount.textContent = '';
+      return;
+    }
+
+    // Normalize text nodes and search
+    const walker = document.createTreeWalker(
+      chaptersContainer,
+      NodeFilter.SHOW_TEXT,
+      null,
+    );
+    const textNodes: Text[] = [];
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (node.textContent && node.textContent.trim()) {
+        textNodes.push(node as Text);
+      }
+    }
+
+    const lowerQuery = query.toLowerCase();
+    let matchCount = 0;
+
+    for (const textNode of textNodes) {
+      const text = textNode.textContent || '';
+      const lower = text.toLowerCase();
+      const idx = lower.indexOf(lowerQuery);
+      if (idx === -1) continue;
+
+      const before = text.slice(0, idx);
+      const match = text.slice(idx, idx + query.length);
+      const after = text.slice(idx + query.length);
+
+      const mark = document.createElement('mark');
+      mark.textContent = match;
+      mark.classList.add('search-highlight');
+
+      const parent = textNode.parentNode;
+      if (!parent) continue;
+      parent.replaceChild(document.createTextNode(before), textNode);
+      parent.insertBefore(mark, textNode);
+      parent.insertBefore(document.createTextNode(after), mark);
+      matchCount++;
+    }
+
+    searchResultsCount.textContent = matchCount > 0 ? `${matchCount} found` : 'No results';
+
+    // Scroll to first match
+    const firstMark = chaptersContainer.querySelector('mark.search-highlight');
+    if (firstMark) {
+      const top = firstMark.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  }
+
+  // Load book
+  async function loadBook() {
+    if (!bookId) {
+      readerLoading.classList.add('hidden');
+      readerError.classList.remove('hidden');
+      readerError.classList.add('flex');
+      return;
+    }
+
+    try {
+      const book = await getBook(bookId);
+      if (!book) {
+        readerLoading.classList.add('hidden');
+        readerError.classList.remove('hidden');
+        readerError.classList.add('flex');
+        return;
+      }
+
+      currentBook = book;
+      currentSettings = book.settings || DEFAULT_SETTINGS;
+      currentChapter = book.lastReadChapter || 0;
+
+      // Render
+      bookTitleEl.textContent = book.title;
+      bookTitleDisplay.textContent = book.title;
+      const readingTime = formatReadingTime(estimateReadingTime(book.wordCount));
+      bookMetaEl.textContent = `${book.fileName} · ${readingTime} · ${book.wordCount.toLocaleString()} words`;
+
+      // Render chapters
+      chaptersContainer.innerHTML = buildReaderHtml(book);
+
+      // Show article
+      readerLoading.classList.add('hidden');
+      readerArticle.classList.remove('hidden');
+
+      // Apply settings
+      applySettings();
+
+      // Update chapter nav
+      updateChapterNav();
+
+      // Restore scroll position
+      setTimeout(() => {
+        if (book.lastReadPosition > 0) {
+          window.scrollTo({ top: book.lastReadPosition, behavior: 'instant' as ScrollBehavior });
+        }
+        updateReadingProgress();
+        detectCurrentChapter();
+      }, 100);
+    } catch (err) {
+      console.error('Failed to load book:', err);
+      readerLoading.classList.add('hidden');
+      readerError.classList.remove('hidden');
+      readerError.classList.add('flex');
+    }
+  }
+
+  // Event listeners
+  fontDecrease.addEventListener('click', () => {
+    if (currentSettings.fontSize > 12) {
+      currentSettings.fontSize -= 2;
+      applySettings();
+      saveSettings();
+    }
+  });
+
+  fontIncrease.addEventListener('click', () => {
+    if (currentSettings.fontSize < 32) {
+      currentSettings.fontSize += 2;
+      applySettings();
+      saveSettings();
+    }
+  });
+
+  themeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const theme = (btn as HTMLElement).dataset.themeBtn as ReaderSettings['theme'];
+      currentSettings.theme = theme;
+      applySettings();
+      saveSettings();
+    });
+  });
+
+  widthBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const width = (btn as HTMLElement).dataset.widthBtn as ReaderSettings['width'];
+      currentSettings.width = width;
+      applySettings();
+      saveSettings();
+    });
+  });
+
+  searchToggle.addEventListener('click', () => {
+    searchBar.classList.toggle('hidden');
+    if (!searchBar.classList.contains('hidden')) {
+      searchInput.focus();
+    }
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    performSearch('');
+    searchInput.focus();
+  });
+
+  searchInput.addEventListener('input', () => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      performSearch(searchInput.value);
+    }, 300);
+  });
+
+  bookmarkBtn.addEventListener('click', () => {
+    saveProgress();
+    showToast('Position saved');
+  });
+
+  exportBtn.addEventListener('click', () => {
+    if (currentBook) {
+      downloadHtmlFile(currentBook);
+      showToast('Downloading reader book...');
+    }
+  });
+
+  prevChapterBtn.addEventListener('click', () => {
+    if (currentChapter > 0) scrollToChapter(currentChapter - 1);
+  });
+
+  nextChapterBtn.addEventListener('click', () => {
+    if (currentBook && currentChapter < currentBook.chapters.length - 1) {
+      scrollToChapter(currentChapter + 1);
+    }
+  });
+
+  // Scroll listener for progress + chapter detection
+  let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+  window.addEventListener('scroll', () => {
+    updateReadingProgress();
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      detectCurrentChapter();
+      saveProgress();
+    }, 500);
+  });
+
+  // Load the book
+  loadBook();
+</script>
