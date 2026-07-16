@@ -1,0 +1,144 @@
+---
+import type { ReaderSettings } from '../lib/indexedDB';
+
+interface Props {
+  settings: ReaderSettings;
+  chapterCount: number;
+  wordCount: number;
+}
+
+const { settings, chapterCount, wordCount } = Astro.props;
+---
+
+<div
+  id="reader-controls"
+  class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md"
+  data-theme={settings.theme}
+  data-font-size={settings.fontSize}
+  data-width={settings.width}
+  data-font-family={settings.fontFamily}
+>
+  <div class="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+    <!-- Left: Back + title -->
+    <div class="flex min-w-0 items-center gap-2">
+      <a
+        href="/library"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
+        aria-label="Back to library"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 9 12l6.75-7.5" />
+        </svg>
+      </a>
+      <span class="truncate text-sm font-semibold text-slate-700" id="book-title-display">
+      </span>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Font size A- -->
+      <button
+        id="font-decrease"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:scale-90"
+        aria-label="Decrease font size"
+      >
+        <span class="text-sm font-bold">A-</span>
+      </button>
+      <!-- Font size A+ -->
+      <button
+        id="font-increase"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:scale-90"
+        aria-label="Increase font size"
+      >
+        <span class="text-lg font-bold">A+</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="mx-0.5 h-6 w-px bg-slate-200"></div>
+
+      <!-- Theme toggle -->
+      <div class="flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        <button data-theme-btn="light" class="theme-btn rounded-md px-2 py-1 text-xs font-medium transition" aria-label="Light theme">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+          </svg>
+        </button>
+        <button data-theme-btn="sepia" class="theme-btn rounded-md px-2 py-1 text-xs font-medium transition" aria-label="Sepia theme">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m3-3-3 3-3-3" />
+          </svg>
+        </button>
+        <button data-theme-btn="dark" class="theme-btn rounded-md px-2 py-1 text-xs font-medium transition" aria-label="Dark theme">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="mx-0.5 hidden h-6 w-px bg-slate-200 sm:block"></div>
+
+      <!-- Width toggle -->
+      <div class="hidden items-center gap-0.5 rounded-lg bg-slate-100 p-0.5 sm:flex">
+        <button data-width-btn="narrow" class="width-btn rounded-md px-2 py-1 text-xs font-medium transition">Narrow</button>
+        <button data-width-btn="medium" class="width-btn rounded-md px-2 py-1 text-xs font-medium transition">Medium</button>
+        <button data-width-btn="wide" class="width-btn rounded-md px-2 py-1 text-xs font-medium transition">Wide</button>
+      </div>
+
+      <!-- Divider -->
+      <div class="mx-0.5 h-6 w-px bg-slate-200"></div>
+
+      <!-- Search -->
+      <button
+        id="search-toggle"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:scale-90"
+        aria-label="Search in book"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+      </button>
+
+      <!-- Bookmark -->
+      <button
+        id="bookmark-btn"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:scale-90"
+        aria-label="Bookmark position"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.529 1.407 1.628 1.407 2.778v14.4l-7-4-7 4V6.1c0-1.15.307-2.249 1.407-2.778A4.7 4.7 0 0 1 8.5 3h7a4.7 4.7 0 0 1 1.093.322Z" />
+        </svg>
+      </button>
+
+      <!-- Export -->
+      <button
+        id="export-btn"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:scale-90"
+        aria-label="Download reader book"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search bar (hidden by default) -->
+  <div id="search-bar" class="hidden border-t border-slate-100 px-3 py-2 sm:px-4">
+    <div class="mx-auto flex max-w-5xl items-center gap-2">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search in book..."
+        class="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
+      />
+      <button id="search-clear" class="rounded-lg px-2 py-1.5 text-sm text-slate-500 hover:bg-slate-100">Clear</button>
+      <span id="search-results-count" class="text-xs text-slate-400"></span>
+    </div>
+  </div>
+
+  <!-- Reading progress bar -->
+  <div class="h-0.5 w-full bg-slate-100">
+    <div id="reading-progress" class="h-full bg-primary-500 transition-all duration-150" style="width: 0%"></div>
+  </div>
+</div>

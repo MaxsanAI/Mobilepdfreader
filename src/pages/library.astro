@@ -1,0 +1,191 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BookCard from '../components/BookCard.astro';
+---
+
+<Layout title="My Library — Mobile PDF Reader">
+  <!-- Nav -->
+  <nav class="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+      <a href="/" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+          </svg>
+        </div>
+        <span class="text-base font-bold text-slate-800">Mobile PDF Reader</span>
+      </a>
+      <div class="flex items-center gap-2">
+        <a
+          href="/"
+          class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-primary-300 hover:text-primary-600 sm:px-4"
+        >
+          Upload PDF
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">My Library</h1>
+        <p class="mt-1 text-sm text-slate-500">Your converted books, stored locally on your device.</p>
+      </div>
+    </div>
+
+    <!-- Books grid -->
+    <div id="books-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <!-- Books rendered by client script -->
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden py-20 text-center">
+      <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.344 1.592L2.5 14.25m1.25-4.474L4.293 5.5A2.25 2.25 0 0 1 6.5 3.75h11a2.25 2.25 0 0 1 2.207 1.75l.543 3.526M2.5 14.25l.014.001m0-.001L2.5 14.25m0 0a2.25 2.25 0 0 0 2.207 1.596h15.586a2.25 2.25 0 0 0 2.207-1.596M21.5 14.25l.014-.001M21.5 14.25l-.014.001M21.5 14.25a2.25 2.25 0 0 0-1.344-1.592L19.75 9.776m1.764 4.474L21.5 14.25" />
+        </svg>
+      </div>
+      <h3 class="mb-2 text-lg font-semibold text-slate-700">No books yet</h3>
+      <p class="mb-6 text-sm text-slate-500">Upload a PDF to start your library.</p>
+      <a
+        href="/"
+        class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 active:scale-95"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9m0 0-3 3m3-3 3 3M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
+        </svg>
+        Upload Your First PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="mb-2 text-lg font-semibold text-slate-800">Delete this book?</h3>
+      <p class="mb-5 text-sm text-slate-500">This action cannot be undone. The book will be permanently removed from your library.</p>
+      <div class="flex gap-3">
+        <button id="delete-cancel" class="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+          Cancel
+        </button>
+        <button id="delete-confirm" class="flex-1 rounded-lg bg-error-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { getAllBooks, deleteBook, type Book } from '../lib/indexedDB';
+
+  const grid = document.getElementById('books-grid')!;
+  const emptyState = document.getElementById('empty-state')!;
+  const deleteModal = document.getElementById('delete-modal')!;
+  const deleteCancel = document.getElementById('delete-cancel')!;
+  const deleteConfirm = document.getElementById('delete-confirm')!;
+  let pendingDeleteId: string | null = null;
+
+  function renderBooks(books: Book[]) {
+    if (books.length === 0) {
+      grid.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    grid.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+
+    grid.innerHTML = books
+      .map((book) => {
+        const readingTime = Math.max(1, Math.ceil(book.wordCount / 220));
+        const timeStr =
+          readingTime < 60
+            ? `${readingTime} min`
+            : `${Math.floor(readingTime / 60)}h`;
+        const cover = book.cover || '';
+        const initials = book.title
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((w) => w[0]?.toUpperCase() || '')
+          .join('');
+        return `
+        <div class="group relative animate-fade-in-up">
+          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+            <a href="/reader?id=${book.id}" class="block">
+              <div class="relative aspect-[3/4] overflow-hidden bg-slate-100">
+                ${
+                  cover
+                    ? `<img src="${cover}" alt="${book.title}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />`
+                    : `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-500 to-primary-800"><span class="text-3xl font-bold text-white">${initials}</span></div>`
+                }
+              </div>
+            </a>
+            <div class="p-3 sm:p-4">
+              <h3 class="mb-1 truncate text-sm font-semibold text-slate-800 sm:text-base">
+                <a href="/reader?id=${book.id}" class="hover:text-primary-600">${book.title}</a>
+              </h3>
+              <p class="mb-2 truncate text-xs text-slate-400">${book.fileName}</p>
+              <p class="mb-3 text-xs text-slate-500">${timeStr} &middot; ${book.wordCount.toLocaleString()} words</p>
+              <div class="flex items-center gap-2">
+                <a href="/reader?id=${book.id}" class="flex-1 rounded-lg bg-primary-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-primary-700 active:scale-95">
+                  Continue Reading
+                </a>
+                <button data-delete-book="${book.id}" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-400 hover:text-red-500 active:scale-90" aria-label="Delete book">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  async function loadBooks() {
+    try {
+      const books = await getAllBooks();
+      renderBooks(books);
+    } catch (err) {
+      console.error('Failed to load books:', err);
+      emptyState.classList.remove('hidden');
+    }
+  }
+
+  // Event delegation for delete buttons
+  grid.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-delete-book]') as HTMLElement | null;
+    if (!btn) return;
+    e.preventDefault();
+    pendingDeleteId = btn.dataset.deleteBook!;
+    deleteModal.classList.remove('hidden');
+    deleteModal.classList.add('flex');
+  });
+
+  deleteCancel.addEventListener('click', () => {
+    deleteModal.classList.add('hidden');
+    deleteModal.classList.remove('flex');
+    pendingDeleteId = null;
+  });
+
+  deleteConfirm.addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    try {
+      await deleteBook(pendingDeleteId);
+      deleteModal.classList.add('hidden');
+      deleteModal.classList.remove('flex');
+      pendingDeleteId = null;
+      await loadBooks();
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  });
+
+  deleteModal.addEventListener('click', (e) => {
+    if (e.target === deleteModal) {
+      deleteCancel.click();
+    }
+  });
+
+  loadBooks();
+</script>

@@ -1,0 +1,253 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PDFUploader from '../components/PDFUploader.astro';
+import ProgressBar from '../components/ProgressBar.astro';
+---
+
+<Layout>
+  <!-- Nav -->
+  <nav class="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+      <a href="/" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+          </svg>
+        </div>
+        <span class="text-base font-bold text-slate-800">Mobile PDF Reader</span>
+      </a>
+      <a
+        href="/library"
+        class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-primary-300 hover:text-primary-600"
+      >
+        My Library
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute -top-40 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary-100/60 blur-3xl"></div>
+      <div class="absolute top-20 right-0 h-72 w-72 rounded-full bg-accent-100/40 blur-3xl"></div>
+    </div>
+
+    <div class="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center sm:px-6 sm:pt-24">
+      <div class="animate-fade-in-up">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 ring-1 ring-primary-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          100% Private — Files never leave your device
+        </span>
+      </div>
+
+      <h1 class="mx-auto mt-6 max-w-3xl animate-fade-in-up text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl sm:leading-tight" style="animation-delay: 0.05s">
+        Read Any PDF Like A<br class="hidden sm:block" /> Modern Ebook
+      </h1>
+
+      <p class="mx-auto mt-5 max-w-xl animate-fade-in-up text-base text-slate-600 sm:text-lg" style="animation-delay: 0.1s">
+        Convert PDFs into a comfortable mobile reading experience.
+      </p>
+
+      <div class="mt-8 flex animate-fade-in-up flex-col items-center justify-center gap-3 sm:flex-row" style="animation-delay: 0.15s">
+        <button
+          id="hero-upload-btn"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition-all hover:bg-primary-700 hover:shadow-xl active:scale-95 sm:w-auto"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9m0 0-3 3m3-3 3 3M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
+          </svg>
+          Upload PDF
+        </button>
+        <a
+          href="/library"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95 sm:w-auto"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.344 1.592L2.5 14.25m1.25-4.474L4.293 5.5A2.25 2.25 0 0 1 6.5 3.75h11a2.25 2.25 0 0 1 2.207 1.75l.543 3.526M2.5 14.25l.014.001m0-.001L2.5 14.25m0 0a2.25 2.25 0 0 0 2.207 1.596h15.586a2.25 2.25 0 0 0 2.207-1.596M21.5 14.25l.014-.001M21.5 14.25l-.014.001M21.5 14.25a2.25 2.25 0 0 0-1.344-1.592L19.75 9.776m1.764 4.474L21.5 14.25" />
+          </svg>
+          Open My Library
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upload section -->
+  <section id="upload-section" class="mx-auto max-w-2xl px-4 pb-16 sm:px-6">
+    <PDFUploader />
+  </section>
+
+  <!-- Features -->
+  <section class="border-t border-slate-100 bg-white py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6">
+      <h2 class="mb-10 text-center text-2xl font-bold text-slate-900">Why Mobile PDF Reader?</h2>
+      <div class="grid gap-6 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-100 p-6 transition hover:shadow-md">
+          <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.03A25.97 25.97 0 0 0 3.75 6.75v9.5a25.97 25.97 0 0 0 8.25 3 25.97 25.97 0 0 0 8.25-3v-9.5a25.97 25.97 0 0 0-8.25-3Z" />
+            </svg>
+          </div>
+          <h3 class="mb-2 font-semibold text-slate-800">Completely Private</h3>
+          <p class="text-sm text-slate-500">Your PDFs are processed entirely in your browser. Nothing is uploaded to any server.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-100 p-6 transition hover:shadow-md">
+          <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+          </div>
+          <h3 class="mb-2 font-semibold text-slate-800">Beautiful Reader</h3>
+          <p class="text-sm text-slate-500">Transform dense PDFs into clean, readable HTML with adjustable fonts and themes.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-100 p-6 transition hover:shadow-md">
+          <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-success-500/10 text-success-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+          </div>
+          <h3 class="mb-2 font-semibold text-slate-800">Offline Library</h3>
+          <p class="text-sm text-slate-500">Saved books are stored locally in your browser. Read anytime, even without internet.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-100 py-8 text-center">
+    <p class="text-sm text-slate-400">Mobile PDF Reader — All processing happens on your device.</p>
+  </footer>
+
+  <ProgressBar status="Reading PDF..." progress={0} visible={false} />
+</Layout>
+
+<script>
+  import { extractPdf } from '../lib/pdfExtractor';
+  import { saveBook, generateId, DEFAULT_SETTINGS, getAllBooks } from '../lib/indexedDB';
+  import { generateCover } from '../lib/readerGenerator';
+
+  const uploader = document.getElementById('pdf-uploader')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const uploadBtn = document.getElementById('upload-btn')!;
+  const heroUploadBtn = document.getElementById('hero-upload-btn')!;
+  const errorEl = document.getElementById('upload-error')!;
+  const progressBar = document.getElementById('progress-bar')!;
+  const progressStatus = document.getElementById('progress-status')!;
+  const progressFill = document.getElementById('progress-fill')!;
+  const progressPercent = document.getElementById('progress-percent')!;
+
+  function showProgress(status: string, progress: number) {
+    progressBar.classList.remove('opacity-0', 'pointer-events-none');
+    progressBar.classList.add('opacity-100');
+    progressStatus.textContent = status;
+    progressFill.style.width = `${progress * 100}%`;
+    progressPercent.textContent = `${Math.round(progress * 100)}%`;
+  }
+
+  function hideProgress() {
+    progressBar.classList.add('opacity-0', 'pointer-events-none');
+    progressBar.classList.remove('opacity-100');
+  }
+
+  function showError(msg: string) {
+    errorEl.textContent = msg;
+    errorEl.classList.remove('hidden');
+    setTimeout(() => errorEl.classList.add('hidden'), 5000);
+  }
+
+  async function handleFile(file: File) {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+
+    try {
+      showProgress('Reading PDF...', 0.05);
+      await new Promise((r) => setTimeout(r, 100));
+
+      const result = await extractPdf(file, (status, progress) => {
+        showProgress(status, 0.1 + progress * 0.6);
+      });
+
+      showProgress('Creating reader version...', 0.8);
+      await new Promise((r) => setTimeout(r, 200));
+
+      const title = result.title || file.name.replace(/\.pdf$/i, '');
+      const book = {
+        id: generateId(),
+        title,
+        author: result.author,
+        cover: generateCover({
+          id: '',
+          title,
+          fileName: file.name,
+          chapters: result.chapters,
+          images: result.images,
+          wordCount: result.wordCount,
+          dateAdded: Date.now(),
+          lastReadPosition: 0,
+          lastReadChapter: 0,
+          settings: DEFAULT_SETTINGS,
+        }),
+        fileName: file.name,
+        chapters: result.chapters,
+        images: result.images,
+        wordCount: result.wordCount,
+        dateAdded: Date.now(),
+        lastReadPosition: 0,
+        lastReadChapter: 0,
+        settings: DEFAULT_SETTINGS,
+      };
+
+      showProgress('Saving to library...', 0.95);
+      await saveBook(book);
+
+      showProgress('Done!', 1);
+      await new Promise((r) => setTimeout(r, 600));
+      hideProgress();
+
+      window.location.href = `/reader?id=${book.id}`;
+    } catch (err) {
+      console.error(err);
+      hideProgress();
+      showError('Failed to process PDF. Please try a different file.');
+    }
+  }
+
+  // File input change
+  fileInput.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) handleFile(file);
+  });
+
+  // Upload buttons
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  heroUploadBtn.addEventListener('click', () => {
+    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => fileInput.click(), 600);
+  });
+
+  // Drag and drop
+  ['dragenter', 'dragover'].forEach((evt) => {
+    uploader.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploader.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach((evt) => {
+    uploader.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploader.classList.remove('drag-over');
+    });
+  });
+  uploader.addEventListener('drop', (e) => {
+    const file = (e as DragEvent).dataTransfer?.files[0];
+    if (file) handleFile(file);
+  });
+</script>
